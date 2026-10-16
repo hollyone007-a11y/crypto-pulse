@@ -22,8 +22,31 @@ python -m cryptopulse.cli run --mode live                     # реальные
 ## Telegram
 1. Создайте бота у @BotFather → `TELEGRAM_TOKEN`; свой id узнайте у @userinfobot → `TELEGRAM_CHAT_ID` (см. `.env.example`).
 2. `export TELEGRAM_TOKEN=... TELEGRAM_CHAT_ID=...` и `python -m cryptopulse.cli telegram` (paper по умолчанию).
-3. Команды: `/status` `/position` `/stats` `/report` `/backtest` `/pause` `/resume` `/help`. Бот сам присылает уведомления об открытии и закрытии сделок и об ошибках.
+3. Команды: `/status` `/position` `/stats` `/report` `/backtest` `/chart` `/close`+`/confirm` `/settings` `/set` `/pause` `/resume` `/help`. Кнопки появляются после `/start`; каждый день в 00:00 UTC приходит сводка. Бот сам присылает уведомления об открытии и закрытии сделок и об ошибках.
 Отвечает только чатам из `TELEGRAM_CHAT_ID`, остальные игнорируются.
+
+## Проверка стратегии на реальных данных (сделайте ДО paper/live)
+```bash
+python -m cryptopulse.cli history --symbol BTCUSDT --start 2022-01-01     # кэш свечей и funding в data/
+python -m cryptopulse.cli backtest --symbol BTCUSDT --start 2022-01-01    # с реальным funding и разбивкой по режимам
+python -m cryptopulse.cli walkforward --symbol BTCUSDT --start 2022-01-01 # честная out-of-sample оценка
+```
+Смотрите на `oos_return_pct`, `profitable_windows_pct` и `worst_window_dd_pct` из walk-forward, а не на обычный бэктест: параметры в нём подбираются на одном окне и проверяются на следующем. Если OOS-доходность ≤ 0 или прибыльных окон < 50% — стратегию в live пускать нельзя. Повторите для ETH, SOL и др.
+
+## Защита капитала
+- **Kill-switch:** просадка 15% от пика → торговля остановлена до ручного `/resume`.
+- **Серия из 4 стопов** → риск на сделку вдвое меньше до первой прибыльной.
+- **Фильтр флэта** (ADX старшего ТФ < 15 → не торгуем).
+- **Состояние в SQLite** (`cryptopulse.db`): позиция, баланс, настройки и сделки переживают перезапуск; дублей ордеров не будет.
+- **Сверка с биржей (live):** нет стопа/тейка → восстанавливается, не вышло → позиция закрывается по рынку; чужая позиция → бот не торгует и сообщает.
+- Все сетевые вызовы к бирже с повторами.
+
+## Деплой
+```bash
+cp .env.example .env  # заполнить
+docker compose up -d --build   # paper по умолчанию; логи ротируются, перезапуск автоматический
+```
+CI (GitHub Actions) гоняет тесты на каждый push.
 
 ## Важно
 - **+50% — это цель на сделку, а не гарантия.** Бот строит сделки с таким потенциалом, но часть будет закрыта по стопу (≈ −20…−25% ROE при риске 1% депозита). Прибыль зависит от винрейта: при R:R 2.3 нужен винрейт > ~30%.

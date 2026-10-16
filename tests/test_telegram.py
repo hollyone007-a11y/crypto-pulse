@@ -70,3 +70,55 @@ def test_long_message_is_split():
     ui = TelegramUI("T", ["1"], make_bot([]), session=http)
     ui.send("1", "x" * 9000)
     assert len(http.sent) == 3
+
+
+def test_close_requires_confirm_and_expires(monkeypatch):
+    import time as _t
+    from cryptopulse.analysis import Signal
+    bot = make_bot([])
+    c = Commands(bot)
+    assert "нет" in c.handle("/close")
+    B = type("B", (), {"Index": pd.Timestamp("2024-02-01"), "close": 100.0})
+    bot._open(Signal("long", 100.0, 98.0, 105.0, 10, 6.0, [], {}), B); bot.last_price = 100.0
+    assert "/confirm" in c.handle("/close") and bot.pos is not None
+    assert "закрыта вручную" in c.handle("/confirm") and bot.pos is None
+    assert "Нет активного" in c.handle("/confirm")
+    c.handle("/close")  # без позиции — запрос не создаётся
+    bot._open(Signal("long", 100.0, 98.0, 105.0, 10, 6.0, [], {}), B)
+    c.handle("/close")
+    c.close_requested -= 120
+    assert "истёк" in c.handle("/confirm") and bot.pos is not None
+
+
+def test_set_and_settings():
+    c = Commands(make_bot([]))
+    assert "risk_per_trade = 0.005" in c.handle("/set риск 0.005")
+    assert "диапазоне" in c.handle("/set плечо 99")
+    assert "числом" in c.handle("/set score abc") and "Формат" in c.handle("/set")
+    assert "0.50%" in c.handle("/settings")
+
+
+def test_chart_and_daily_summary():
+    import datetime as dt
+    msgs = []
+    bot = make_bot(msgs)
+    c = Commands(bot)
+    assert "пока нет" in c.chart_text() and c.chart_png() is None
+    bot.trades = [{"pnl": 10.0, "close": pd.Timestamp("2024-03-01 12:00")},
+                  {"pnl": -4.0, "close": pd.Timestamp("2024-03-01 18:00")}]
+    assert "▁" in c.chart_text() or "█" in c.chart_text()
+    s = c.daily_summary(dt.date(2024, 3, 1))
+    assert "сделок 2" in s and "+6.00" in s and "не было" in c.daily_summary(dt.date(2024, 3, 2))
+    http = FakeHTTP()
+    ui = TelegramUI("T", ["1"], bot, session=http)
+    ui.last_summary = dt.date(2024, 3, 1)
+    ui.maybe_daily_summary(dt.datetime(2024, 3, 2, 0, 5, tzinfo=dt.timezone.utc))
+    ui.maybe_daily_summary(dt.datetime(2024, 3, 2, 9, 0, tzinfo=dt.timezone.utc))   # второй раз — тишина
+    assert len(http.sent) == 1 and "Итоги 2024-03-01" in http.sent[0][1]["text"]
+
+
+def test_start_sends_keyboard():
+    http = FakeHTTP()
+    ui = TelegramUI("T", ["1"], make_bot([]), session=http)
+    ui.process({"update_id": 1, "message": {"chat": {"id": 1}, "text": "/start"}})
+    assert "reply_markup" in http.sent[0][1]

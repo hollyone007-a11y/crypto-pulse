@@ -1,0 +1,2 @@
+-r requirements.txt
+ccxt>=4.3

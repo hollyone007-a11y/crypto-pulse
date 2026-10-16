@@ -1,0 +1,16 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - botdata:/data
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+    # LIVE: замените команду на ["python","-m","cryptopulse.cli","telegram","--mode","live"] — но ТОЛЬКО после
+    # paper-прогона. Учтите: live запрашивает подтверждение через input(), поэтому добавьте stdin_open/tty:
+    # stdin_open: true
+    # tty: true
+volumes:
+  botdata:
