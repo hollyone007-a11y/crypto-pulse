@@ -49,10 +49,18 @@ def score_side(side: str, ltf, prev, htf):
     return s, why
 
 
+def regime(htf) -> str:
+    if htf.adx < 20:
+        return "range"
+    return "bull" if htf.ema50 > htf.ema200 else "bear"
+
+
 def generate_signal(ltf, prev, htf, cfg: Config):
     """Единая точка принятия решения (используется и в бэктесте, и в live)."""
     if any(v != v for v in (ltf.atr, ltf.ema50, htf.ema200, ltf.hh, ltf.ll, ltf.vol_ma)):
         return None  # прогрев индикаторов
+    if htf.adx < cfg.min_htf_adx:
+        return None  # флэт на старшем ТФ — трендовая стратегия здесь теряет
     best = None
     for side in ("long", "short"):
         sc, why = score_side(side, ltf, prev, htf)
@@ -63,4 +71,4 @@ def generate_signal(ltf, prev, htf, cfg: Config):
     side, sc, why = best
     from .risk import build_trade
     return build_trade(side, ltf.close, ltf.atr, sc, why, cfg,
-                       ctx={"rsi": float(ltf.rsi), "adx": float(ltf.adx), "atr_pct": float(ltf.atr / ltf.close)})
+                       ctx={"regime": regime(htf), "rsi": float(ltf.rsi), "adx": float(ltf.adx), "atr_pct": float(ltf.atr / ltf.close)})

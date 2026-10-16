@@ -24,11 +24,11 @@ def build_trade(side, price, atr, score, reasons, cfg: Config, ctx=None):
     return Signal(side, price, price - sgn * sl_d, price + sgn * tp_d, lev, score, list(reasons), ctx or {})
 
 
-def position_size(equity: float, sig: Signal, cfg: Config):
+def position_size(equity: float, sig: Signal, cfg: Config, risk_mult: float = 1.0):
     """Возвращает (qty, margin). Риск на сделку = risk_per_trade * equity (включая комиссии)."""
     sl_frac = abs(sig.entry - sig.sl) / sig.entry
     loss_per_unit = sig.entry * (sl_frac + 2 * (cfg.fee + cfg.slippage))
-    qty = equity * cfg.risk_per_trade / loss_per_unit
+    qty = equity * cfg.risk_per_trade * risk_mult / loss_per_unit
     margin = qty * sig.entry / sig.leverage
     cap = equity * 0.9
     if margin > cap:

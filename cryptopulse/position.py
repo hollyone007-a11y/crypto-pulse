@@ -17,6 +17,7 @@ class Position:
     mae: float = 0.0   # макс. неблагоприятное движение (доля от входа)
     mfe: float = 0.0   # макс. благоприятное движение
     bars: int = 0
+    funding: float = 0.0   # накопленный funding (положительное = заплатили)
     extra: dict = field(default_factory=dict)
 
     @property
@@ -26,6 +27,9 @@ class Position:
     def update(self, bar):
         """Применяет свечу. Возвращает (цена_выхода, причина) или None. При SL и TP в одной свече — считаем SL."""
         self.bars += 1
+        f = getattr(bar, "fund", 0.0)
+        if f:
+            self.funding += self.sgn * f * self.qty * getattr(bar, "close", self.entry)
         fav = (bar.high if self.sgn > 0 else bar.low)
         adv = (bar.low if self.sgn > 0 else bar.high)
         self.mfe = max(self.mfe, self.sgn * (fav - self.entry) / self.entry)
@@ -42,4 +46,4 @@ class Position:
     def pnl(self, exit_price, fee, slip):
         gross = self.sgn * (exit_price - self.entry) * self.qty
         costs = self.qty * (self.entry + exit_price) * (fee + slip)
-        return gross - costs
+        return gross - costs - self.funding

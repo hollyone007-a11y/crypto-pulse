@@ -19,3 +19,8 @@ class Config:
     max_daily_loss: float = 0.05   # стоп-торговля на день при -5%
     max_open: int = 1
     cooldown_bars: int = 3
+    default_funding: float = 0.0001  # funding за 8ч, если реальной истории нет (лонг платит)
+    min_htf_adx: float = 15.0        # фильтр режима: во флэте на старшем ТФ не торгуем
+    max_drawdown: float = 0.15       # kill-switch: остановка при просадке от пика
+    max_loss_streak: int = 4         # серия стопов подряд -> уменьшаем риск
+    streak_risk_mult: float = 0.5

@@ -12,6 +12,10 @@ def analyze(trades: pd.DataFrame) -> str:
     if trades.empty:
         return "Сделок нет."
     out = ["=== По стороне ===", _grp(trades, "side").to_string()]
+    if "regime" in trades:
+        out += ["", "=== По режиму рынка (bull/bear/range) ===", _grp(trades, "regime").to_string()]
+    if "funding" in trades:
+        out += ["", f"Funding за всё время: {trades.funding.sum():+.2f} USDT (положительное = заплатили)"]
     out += ["", "=== По причине выхода ===", _grp(trades, "exit_reason").to_string()]
     ex = trades.assign(reason=trades.reasons.str.split(",")).explode("reason")
     out += ["", "=== По факторам входа (какие сигналы реально работают) ===",
