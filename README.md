@@ -19,6 +19,12 @@ python -m cryptopulse.cli run --mode paper                    # виртуаль
 python -m cryptopulse.cli run --mode live                     # реальные деньги (см. .env.example)
 ```
 
+## Telegram
+1. Создайте бота у @BotFather → `TELEGRAM_TOKEN`; свой id узнайте у @userinfobot → `TELEGRAM_CHAT_ID` (см. `.env.example`).
+2. `export TELEGRAM_TOKEN=... TELEGRAM_CHAT_ID=...` и `python -m cryptopulse.cli telegram` (paper по умолчанию).
+3. Команды: `/status` `/position` `/stats` `/report` `/backtest` `/pause` `/resume` `/help`. Бот сам присылает уведомления об открытии и закрытии сделок и об ошибках.
+Отвечает только чатам из `TELEGRAM_CHAT_ID`, остальные игнорируются.
+
 ## Важно
 - **+50% — это цель на сделку, а не гарантия.** Бот строит сделки с таким потенциалом, но часть будет закрыта по стопу (≈ −20…−25% ROE при риске 1% депозита). Прибыль зависит от винрейта: при R:R 2.3 нужен винрейт > ~30%.
 - Плечо 10x усиливает и убытки. Не торгуйте суммой, которую жалко потерять.

@@ -10,7 +10,7 @@ from .report import analyze
 
 def main():
     p = argparse.ArgumentParser(prog="cryptopulse")
-    p.add_argument("command", choices=["backtest", "run"])
+    p.add_argument("command", choices=["backtest", "run", "telegram"])
     p.add_argument("--symbol", default="BTCUSDT")
     p.add_argument("--csv", help="CSV со свечами: time,open,high,low,close,volume")
     p.add_argument("--synthetic", action="store_true", help="синтетические данные (проверка кода)")
@@ -26,6 +26,11 @@ def main():
         trades, st = run_backtest(df, cfg)
         print(json.dumps(st, indent=2, ensure_ascii=False))
         print(analyze(trades))
+    elif a.command == "telegram":
+        if a.mode == "live":
+            input("LIVE через Telegram: реальные ордера с плечом. Enter — продолжить: ")
+        from .telegram_ui import serve
+        serve(cfg, a.mode)
     else:
         if a.mode == "live":
             input("LIVE: будут открываться реальные ордера с плечом. Enter — продолжить, Ctrl+C — отмена: ")
