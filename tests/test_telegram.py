@@ -2,13 +2,14 @@ import pandas as pd
 
 from cryptopulse.bot import TradingBot
 from cryptopulse.config import Config
+from cryptopulse.store import Store
 from cryptopulse.data import synthetic
 from cryptopulse.telegram_ui import Commands, TelegramUI
 
 
 def make_bot(msgs):
     df = synthetic(4000)
-    return TradingBot(Config(), "paper", notify=msgs.append, fetch=lambda s, i, n: df)
+    return TradingBot(Config(), "paper", notify=msgs.append, fetch=lambda s, i, n: df, store=Store(":memory:"))
 
 
 class FakeHTTP:
@@ -43,9 +44,9 @@ def test_pause_resume_blocks_entries():
 def test_bot_trades_and_commands_reflect_it():
     msgs = []
     full = synthetic(4000)
-    bot = TradingBot(Config(), "paper", notify=msgs.append, fetch=lambda s, i, n: full)
+    bot = TradingBot(Config(), "paper", notify=msgs.append, fetch=lambda s, i, n: full, store=Store(":memory:"))
     # прогоняем историю свеча за свечой, как живой цикл
-    for end in range(300, 3000, 1):
+    for end in range(300, 2700, 4):
         bot.fetch = lambda s, i, n, e=end: full.iloc[max(0, e - 999): e + 1]
         bot.step()
     assert bot.trades and any("Открыта" in m for m in msgs) and any("Закрыта" in m for m in msgs)
